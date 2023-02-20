@@ -1,0 +1,56 @@
+---
+- name: Install required packages for building Nginx
+  become: true
+  apt:
+    name:
+      - git
+      - build-essential
+      - libpcre3-dev
+      - zlib1g-dev
+      - libssl-dev
+
+- name: Download Nginx source code from the official website
+  get_url:
+    url: "http://nginx.org/download/nginx-{{ nginx_version }}.tar.gz"
+    dest: "/tmp/nginx-{{ nginx_version }}.tar.gz"
+    mode: '0440'
+    owner: root
+    group: root
+
+- name: Extract Nginx source code
+  become: true
+  unarchive:
+    src: "/tmp/nginx-{{ nginx_version }}.tar.gz"
+    dest: "/usr/local/src"
+    remote_src: yes
+
+- name: Configure and build Nginx
+  become: true
+  shell: |
+    cd /usr/local/src/nginx-{{ nginx_version }}
+    ./configure --prefix=/usr/local/nginx --with-http_ssl_module
+    make
+    make install
+
+- name: Create systemd service file for Nginx
+  become: true
+  template:
+    src: nginx.service.j2
+    dest: /etc/systemd/system/nginx.service
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Start Nginx service
+  become: true
+  service:
+    name: nginx
+    state: started
+    enabled: true
+
+handlers:
+  - name: Reload systemd
+    become: true
+    systemd:
+      daemon_reload: yes
+      state: reloaded
+

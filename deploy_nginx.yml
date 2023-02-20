@@ -1,0 +1,8 @@
+---
+- name: Deploy nginx from source
+  hosts: loadbalancer
+  vars:
+    nginx_version: 1.23.1
+  roles:
+    - nginx_install
+...
